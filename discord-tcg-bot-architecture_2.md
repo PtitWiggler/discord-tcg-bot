@@ -312,3 +312,30 @@ Aucun écart d'architecture. Correction d'un bug de configuration préexistant (
 
 ### Prochaine étape
 Milestone 4 — Commande `/collection` (nouvelle conversation, section 15).
+
+## Milestone 4 — Rapport d'avancement
+
+**Statut : ✅ Terminé**
+
+### Livrable
+Un joueur peut parcourir toute sa collection depuis Discord. Validé par Thomas via test réel de `/collection`.
+
+### Réalisé
+- `src/services/collection.service.ts` : `buildCollectionPages()` — service pur (même principe que `loot.service.ts`/`cooldown.service.ts`), reçoit les `PlayerCard` déjà chargés par l'appelant. Tri par rareté croissante (Normale → Légendaire) puis alphabétique au sein d'un groupe, découpage en pages de 10 cartes avec en-tête de rareté répété (mention "(suite)") si un groupe est interrompu par un saut de page.
+- `src/commands/collection.ts` : réponse éphémère, boutons "◀ Précédent / Suivant ▶" via un `MessageComponentCollector` local au message de réponse (timeout 3 min, puis boutons désactivés), gestion du cas collection vide (invitation à faire `/loot`).
+- `src/scripts/verify-collection-pagination.ts` : script de vérification manuelle de la logique pure (collection vide, tri/regroupement, groupe débordant sur 2 pages avec "(suite)", frontière de page coïncidant avec une frontière de groupe) — même famille que `verify-loot-logic.ts` au Milestone 3.
+- `src/scripts/reset-cooldown.ts` : utilitaire de dev pour réinitialiser `Player.lastLootAt`, ajouté en cours de milestone à la demande de Thomas pour faciliter les tests manuels répétés de `/loot` sans attendre le reset de minuit.
+
+### Décisions techniques prises pendant l'implémentation (non détaillées dans le document initial)
+- **Tri de la collection** : la section 8 laissait le choix "selon préférence" entre regroupement par rareté et tri alphabétique — question posée explicitement à Thomas plutôt que tranchée seule. Choix retenu : tri par rareté croissante (Normale → Légendaire, ordre "classique"), puis alphabétique au sein d'un groupe.
+- **Pas de génération d'image canvas pour `/collection`** : liste texte compacte en embed, le rendu image détaillé par carte reste réservé à `/carte` (Milestone 5) — cohérent avec la répartition de rôle de la section 8 ("consulter sa collection" vs. "afficher une carte précise").
+- **Pagination encapsulée localement dans la commande** via un collector attaché au message de réponse, sans toucher au routeur global `interactionCreate.ts` — pas de généralisation prématurée pour un seul cas d'usage de pagination.
+- **`withResponse: true` sur `interaction.reply()`** : nécessaire pour que le collector reçoive les clics sur une réponse éphémère (comportement documenté de discord.js — sans cette option, un collector attaché via `fetchReply()` classique ne capte rien sur une réponse éphémère non renvoyée par l'API avec sa ressource).
+- **`ENTRIES_PER_PAGE = 10`**, constante ajustable en un point si le contenu grossit significativement.
+- **`reset-cooldown.ts`** : script utilitaire, aucun impact sur la logique de production (`cooldown.service.ts` inchangé) — dans la continuité des scripts de vérification des Milestones 2 et 3.
+
+### Écarts par rapport au document
+Aucun écart d'architecture. Ajout du script `reset-cooldown.ts` (outil de dev hors périmètre du bot lui-même), non prévu au document initial mais dans la continuité des utilitaires de vérification déjà établis.
+
+### Prochaine étape
+Milestone 5 — Commande `/carte`.
