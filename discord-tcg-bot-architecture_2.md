@@ -285,3 +285,30 @@ Aucun écart d'architecture. Ajout du dossier `assets/fonts/` (non listé sectio
 
 ### Prochaine étape
 Milestone 3 — Commande `/loot`.
+
+## Milestone 3 — Rapport d'avancement
+
+**Statut : ✅ Terminé**
+
+### Livrable
+`/loot` fonctionne de bout en bout, une fois par jour et par joueur. Vérifié en conditions réelles sur le serveur de test : tirage reçu en public avec embed coloré selon la rareté et image générée, second `/loot` immédiat bloqué par un message éphémère de cooldown, doublon détecté et affiché correctement (`Doublon (xN)`), données persistées vérifiées via Prisma Studio (`Player.lastLootAt`, `PlayerCard.quantity`).
+
+### Réalisé
+- `src/db/client.ts` : instance unique de `PrismaClient`, partagée par les commandes et services (structure prévue section 12, jamais nécessaire jusqu'ici).
+- `src/services/cooldown.service.ts` : calcul du cooldown quotidien, reset à minuit heure de Paris (`getLastParisMidnight`, `getNextResetAt`, `isOnCooldown`). Service pur, sans dépendance Prisma.
+- `src/services/loot.service.ts` : `rollLoot()`, tirage pondéré de la rareté (`dropWeight`) puis tirage uniforme du template — service pur, reçoit les données déjà chargées par l'appelant (section 7, étapes 2-3).
+- `src/commands/loot.ts` : orchestration complète — vérification/écriture du cooldown, résolution du `CardVariant`, création/incrément du `PlayerCard`, génération de l'image via `ImageService`, réponse en embed (publique) ou message de cooldown (éphémère).
+- `src/scripts/verify-loot-logic.ts` : script de vérification manuelle (tirage pondéré sur 100k itérations, cooldown hiver/été) — utilitaire de dev, même logique que `preview-cards.ts` au Milestone 2.
+
+### Décisions techniques prises pendant l'implémentation (non détaillées dans le document initial)
+- **Calcul du minuit Paris sans dépendance de dates** : décalage horaire Paris/UTC calculé via `Intl.DateTimeFormat` (gère CET/CEST automatiquement). Limite connue et acceptée : le jour précis d'un changement d'heure, la frontière peut dévier d'environ 1h — négligeable pour un cooldown quotidien communautaire.
+- **Cooldown et attribution de carte regroupés dans une transaction Prisma unique** (`$transaction`) : ferme une race condition réaliste (double clic rapide sur `/loot`), non détaillée dans le document initial qui décrit la logique en étapes séquentielles (section 7).
+- **Lecture de `fullart` dupliquée localement dans `loot.ts`** : ce flag vit uniquement dans `content/rarities.json` (jamais en DB, décision Milestone 2). Pas d'extraction en helper commun pour l'instant — probable à mutualiser au Milestone 5 (`/carte`), qui aura le même besoin.
+- **`interaction.deferReply()`** avant la génération d'image : la composition canvas (potentiellement > 3s au premier appel du process, le temps de charger les polices) risquait de dépasser le délai d'ack Discord.
+- **Fix `DATABASE_URL`** : `file:./prisma/dev.db` résolvait en réalité vers `prisma/prisma/dev.db` (Prisma résout les chemins relatifs depuis `schema.prisma`), ce qui avait fait échapper `prisma/dev.db` au `.gitignore` et committé la base de dev par erreur. Corrigé en `file:./dev.db`, fichier retiré du suivi git.
+
+### Écarts par rapport au document
+Aucun écart d'architecture. Correction d'un bug de configuration préexistant (`DATABASE_URL`, voir ci-dessus), sans lien avec le périmètre du milestone mais corrigé au passage.
+
+### Prochaine étape
+Milestone 4 — Commande `/collection` (nouvelle conversation, section 15).
