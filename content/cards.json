@@ -1,0 +1,7 @@
+[
+  { "name": "Dragon Rouge", "slug": "dragon-rouge", "flavorText": "Une bête ancienne aux écailles couleur de braise." },
+  { "name": "Loup des Brumes", "slug": "loup-des-brumes", "flavorText": "Il chasse là où le brouillard épaissit." },
+  { "name": "Golem de Pierre", "slug": "golem-de-pierre", "flavorText": "Gardien immobile depuis des siècles." },
+  { "name": "Phénix Céleste", "slug": "phenix-celeste", "flavorText": "Renaît de ses cendres à chaque aube." },
+  { "name": "Sylphe des Vents", "slug": "sylphe-des-vents", "flavorText": "Insaisissable, elle danse avec la tempête." }
+]

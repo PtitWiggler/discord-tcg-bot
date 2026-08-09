@@ -1,0 +1,7 @@
+[
+  { "name": "Normale", "sortOrder": 1, "colorHex": "#B0B0B0", "dropWeight": 55, "fullart": false },
+  { "name": "Rare", "sortOrder": 2, "colorHex": "#3B82F6", "dropWeight": 25, "fullart": false },
+  { "name": "Super Rare", "sortOrder": 3, "colorHex": "#A855F7", "dropWeight": 12, "fullart": false },
+  { "name": "Épique", "sortOrder": 4, "colorHex": "#F97316", "dropWeight": 6, "fullart": false },
+  { "name": "Légendaire", "sortOrder": 5, "colorHex": "#FACC15", "dropWeight": 2, "fullart": true }
+]

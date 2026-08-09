@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  discordId  String    @id
+  lastLootAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  cards PlayerCard[]
+}
+
+model Rarity {
+  id         Int    @id @default(autoincrement())
+  name       String @unique
+  sortOrder  Int
+  colorHex   String
+  dropWeight Int
+
+  variants CardVariant[]
+}
+
+model CardTemplate {
+  id         Int     @id @default(autoincrement())
+  name       String
+  slug       String  @unique
+  flavorText String?
+
+  variants CardVariant[]
+}
+
+model CardVariant {
+  id             Int    @id @default(autoincrement())
+  cardTemplateId Int
+  rarityId       Int
+  imageFile      String
+
+  cardTemplate CardTemplate @relation(fields: [cardTemplateId], references: [id])
+  rarity       Rarity       @relation(fields: [rarityId], references: [id])
+
+  playerCards PlayerCard[]
+
+  // Un template n'a qu'une seule variante par rareté
+  @@unique([cardTemplateId, rarityId])
+}
+
+model PlayerCard {
+  playerId        String
+  cardVariantId   Int
+  quantity        Int      @default(1)
+  firstObtainedAt DateTime @default(now())
+
+  player      Player      @relation(fields: [playerId], references: [discordId])
+  cardVariant CardVariant @relation(fields: [cardVariantId], references: [id])
+
+  // Une ligne unique par joueur/variante ; les doublons incrémentent quantity
+  @@id([playerId, cardVariantId])
+}
