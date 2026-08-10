@@ -1,6 +1,24 @@
 import type { Interaction } from 'discord.js';
 
 export async function onInteractionCreate(interaction: Interaction): Promise<void> {
+  if (interaction.isAutocomplete()) {
+    const command = interaction.client.commands.get(interaction.commandName);
+
+    if (!command?.autocomplete) {
+      console.warn(`⚠️ Autocomplete reçu sans handler pour /${interaction.commandName}`);
+      return;
+    }
+
+    try {
+      await command.autocomplete(interaction);
+    } catch (error) {
+      // Une interaction autocomplete n'a pas de reply()/followUp() de secours : on ne
+      // peut que logger. Discord affichera simplement une liste de suggestions vide.
+      console.error(`Erreur lors de l'autocomplete de /${interaction.commandName} :`, error);
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const command = interaction.client.commands.get(interaction.commandName);
@@ -16,7 +34,7 @@ export async function onInteractionCreate(interaction: Interaction): Promise<voi
     console.error(`Erreur lors de l'exécution de /${interaction.commandName} :`, error);
 
     const errorMessage = {
-      content: '❌ Une erreur est survenue lors de l\'exécution de la commande.',
+      content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
       ephemeral: true,
     };
 

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   AttachmentBuilder,
   EmbedBuilder,
@@ -11,27 +9,7 @@ import { prisma } from '../db/client.js';
 import { getLastParisMidnight, getNextResetAt } from '../services/cooldown.service.js';
 import { rollLoot } from '../services/loot.service.js';
 import { generateCardImage } from '../services/image.service.js';
-
-// Le flag `fullart` vit uniquement dans content/rarities.json (jamais en DB, décision
-// Milestone 2 pour éviter une migration Prisma). Lu une fois et mis en cache pour le
-// process — même pattern que ensureFontsRegistered() dans image.service.ts.
-// NOTE : cette lecture sera probablement dupliquée par /carte (Milestone 5). Pas
-// d'extraction en commun pour l'instant, pour rester dans le périmètre de ce milestone.
-interface RarityContentConfig {
-  name: string;
-  fullart?: boolean;
-}
-
-let fullartByRarityName: Map<string, boolean> | null = null;
-
-function isFullart(rarityName: string): boolean {
-  if (!fullartByRarityName) {
-    const raw = readFileSync(join(process.cwd(), 'content', 'rarities.json'), 'utf-8');
-    const configs: RarityContentConfig[] = JSON.parse(raw);
-    fullartByRarityName = new Map(configs.map((c) => [c.name, c.fullart ?? false]));
-  }
-  return fullartByRarityName.get(rarityName) ?? false;
-}
+import { isFullart } from '../services/rarity-content.service.js';
 
 type LootOutcome =
   | { onCooldown: true }

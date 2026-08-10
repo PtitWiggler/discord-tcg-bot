@@ -339,3 +339,31 @@ Aucun écart d'architecture. Ajout du script `reset-cooldown.ts` (outil de dev h
 
 ### Prochaine étape
 Milestone 5 — Commande `/carte`.
+
+## Milestone 5 — Rapport d'avancement
+
+**Statut : ✅ Terminé**
+
+### Livrable
+`/carte <nom>` affiche la bonne carte avec autocomplete fonctionnel. Validé par Thomas via test réel : suggestions cohérentes en tapant, sélection d'une carte, affichage correct.
+
+### Réalisé
+- `src/commands/carte.ts` : autocomplete sur les variantes réellement possédées par le joueur, affichage éphémère en grand (embed + image générée via `ImageService`, même pattern que `/loot`).
+- `src/services/card-lookup.service.ts` : `buildAutocompleteChoices()` — service pur (même principe que `collection.service.ts`), reçoit les `PlayerCard` déjà chargés par l'appelant. Tri par rareté croissante puis alphabétique (identique à `/collection`), filtrage insensible à la casse et aux accents, troncature à 25 suggestions (limite Discord).
+- `src/services/rarity-content.service.ts` : extraction du helper `isFullart()`, précédemment dupliqué localement dans `loot.ts` — mutualisation anticipée dans le journal du Milestone 3, `loot.ts` mis à jour pour l'utiliser (comportement inchangé).
+- `src/scripts/verify-carte-autocomplete.ts` : script de vérification manuelle de la logique pure (collection vide, variantes multiples d'une même carte, filtrage accents/casse, troncature à 25) — même famille que les scripts des Milestones 2-4.
+- `src/types.ts` : ajout d'un champ optionnel `autocomplete?` sur l'interface `Command`, sans impact sur les commandes existantes.
+- `src/events/interactionCreate.ts` : routage des interactions `isAutocomplete()` vers `command.autocomplete()` — le routeur global ne gérait jusqu'ici que `isChatInputCommand()`, aucune commande n'en ayant eu besoin avant `/carte`.
+
+### Décisions techniques prises pendant l'implémentation (non détaillées dans le document initial)
+- **Une suggestion d'autocomplete par variante possédée, pas par nom de carte** : un joueur peut posséder plusieurs raretés d'une même carte (ex. "Dragon Rouge" en Rare et en Épique), chacune étant une ligne `PlayerCard` distincte. Question posée explicitement à Thomas plutôt que tranchée seule (comme le tri de `/collection` au Milestone 4) — choix retenu : une suggestion par variante (ex. "Dragon Rouge (Rare)", "Dragon Rouge (Épique)"), le joueur choisit précisément laquelle afficher. La `value` envoyée à Discord est l'id de `CardVariant` (string), jamais affiché tel quel.
+- **Validation défensive côté `execute`** : l'autocomplete Discord n'empêche pas l'envoi d'un texte libre non sélectionné dans la liste (comportement connu de l'API). La valeur reçue est donc systématiquement revérifiée contre la collection réelle du joueur (`playerId` + `cardVariantId`) avant tout traitement — message "carte introuvable" sinon.
+- **Routeur global étendu pour l'autocomplete** : `interactionCreate.ts` ne traitait jusqu'ici que les `ChatInputCommandInteraction`. Ajout d'une branche `isAutocomplete()` dédiée (log-only en cas d'erreur, une interaction autocomplete n'ayant pas de `reply()`/`followUp()` de secours). Additif, sans changement de comportement pour `/ping`, `/loot`, `/collection`.
+- **Élargissement du type `Command.data`** : dès qu'une commande utilise `.addStringOption()`, discord.js retourne un type `SlashCommandOptionsOnlyBuilder` plus étroit que `SlashCommandBuilder` (n'inclut plus les méthodes de sous-commandes), incompatible avec le typage initial de l'interface `Command`. Élargi à `SlashCommandBuilder | SlashCommandOptionsOnlyBuilder | SlashCommandSubcommandsOnlyBuilder` — sans impact car seuls `.name` et `.toJSON()` sont utilisés en dehors des fichiers de commandes (`index.ts`, `deploy-commands.ts`), présents sur les trois variantes.
+- **Recherche insensible aux accents** (`normalize('NFD')` + suppression des diacritiques) : permet à "epiq" de trouver "Épique" en tapant, confort d'usage jugé utile vu les noms de raretés accentués.
+
+### Écarts par rapport au document
+Aucun écart de fonctionnalité. Extension du routeur global (`interactionCreate.ts`) et élargissement du typage `Command.data`, non prévus explicitement au document mais nécessaires dès qu'une commande a des options avec autocomplete — signalés à Thomas avant implémentation.
+
+### Prochaine étape
+Milestone 6 — Finitions et déploiement V1 (nouvelle conversation, section 15).
